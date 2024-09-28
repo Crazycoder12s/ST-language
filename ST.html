@@ -49,25 +49,6 @@
             overflow-y: scroll;
         }
 
-        textarea::-webkit-scrollbar {
-            width: 10px;
-        }
-
-        textarea::-webkit-scrollbar-track {
-            background: #222;
-            border-radius: 5px;
-        }
-
-        textarea::-webkit-scrollbar-thumb {
-            background-color: #555;
-            border-radius: 5px;
-            border: 2px solid #333;
-        }
-
-        textarea::-webkit-scrollbar-thumb:hover {
-            background-color: #888;
-        }
-
         button {
             background-color: #00b894;
             color: white;
@@ -82,8 +63,9 @@
             background-color: #00a680;
         }
 
-        .rect {
+        .circ {
             position: absolute;
+            border-radius: 50%;
         }
     </style>
 </head>
@@ -100,9 +82,8 @@
         constructor() {
             this.variables = {};
             this.shapes = {};
-            this.keyEvents = {};
+            this.physics = {};
             this.canvas = document.getElementById('canvas');
-            this.isWaiting = false;
         }
 
         setVar(name, value) {
@@ -116,32 +97,43 @@
             return parseInt(name, 10);
         }
 
-        createRect(name, x, y, width, height, color) {
-            const rect = document.createElement('div');
-            rect.className = 'rect';
-            rect.style.width = `${width}px`;
-            rect.style.height = `${height}px`;
-            rect.style.backgroundColor = color;
-            rect.style.left = `${x}px`;
-            rect.style.top = `${y}px`;
-            this.canvas.appendChild(rect);
-            this.shapes[name] = rect;
+        createCirc(name, x, y, diameter, color) {
+            const circ = document.createElement('div');
+            circ.className = 'circ';
+            circ.style.width = `${diameter}px`;
+            circ.style.height = `${diameter}px`;
+            circ.style.backgroundColor = color;
+            circ.style.left = `${x}px`;
+            circ.style.top = `${y}px`;
+            this.canvas.appendChild(circ);
+            this.shapes[name] = circ;
         }
 
-        moveRect(name, dx, dy) {
-            const rect = this.shapes[name];
-            if (rect) {
-                let currentX = parseInt(rect.style.left, 10);
-                let currentY = parseInt(rect.style.top, 10);
-                rect.style.left = `${currentX + dx}px`;
-                rect.style.top = `${currentY + dy}px`;
-            }
-        }
+        bounce(name) {
+            const circ = this.shapes[name];
+            if (circ) {
+                const diameter = parseInt(circ.style.width, 10);
+                let currentX = parseInt(circ.style.left, 10);
+                let currentY = parseInt(circ.style.top, 10);
 
-        changeColor(name, color) {
-            const rect = this.shapes[name];
-            if (rect) {
-                rect.style.backgroundColor = color;
+                const velocityX = this.physics[name]?.velocityX || 2;
+                const velocityY = this.physics[name]?.velocityY || 2;
+
+                // Update position
+                currentX += velocityX;
+                currentY += velocityY;
+
+                // Bounce off walls
+                if (currentX <= 0 || currentX >= (400 - diameter)) {
+                    this.physics[name].velocityX *= -1; // Reverse X direction
+                }
+                if (currentY <= 0 || currentY >= (400 - diameter)) {
+                    this.physics[name].velocityY *= -1; // Reverse Y direction
+                }
+
+                // Set the new position
+                circ.style.left = `${currentX}px`;
+                circ.style.top = `${currentY}px`;
             }
         }
 
@@ -149,127 +141,29 @@
             this.functions[name] = commands;
         }
 
-        callFunction(name) {
-            if (this.functions[name]) {
-                this.run(this.functions[name]);
-            }
-        }
-
-        detectKeypress(key, action) {
-            this.keyEvents[key] = action;
-        }
-
-        handleKeypress(event) {
-            const action = this.keyEvents[event.key];
-            if (action) {
-                this.callFunction(action);
-            }
-        }
-
-        async run(code) {
-            const commands = this.splitCommands(code);
+        run(code) {
+            const commands = code.split('\n');
             for (let line of commands) {
-                await this.executeLine(line);
+                this.executeLine(line.trim());
             }
         }
 
-        splitCommands(code) {
-            const lines = code.split('\n');
-            let commands = [];
-            let inLoop = false;
-            let loopCommands = [];
-            let loopCount = 0;
-
-            for (let line of lines) {
-                line = line.trim();
-                if (line.startsWith('LOOP')) {
-                    const tokens = line.split(' ');
-                    const loopType = tokens[1];
-                    loopCommands = [];
-                    inLoop = true;
-                    loopCount = loopType === 'FOREVER' ? -1 : this.getVar(loopType);
-                } else if (line === 'END') {
-                    inLoop = false;
-                    commands.push({ loopCount, loopCommands });
-                } else if (inLoop) {
-                    loopCommands.push(line);
-                } else {
-                    commands.push(line);
-                }
-            }
-
-            return commands.map(command => {
-                if (typeof command === 'object') {
-                    return { loopCount: command.loopCount, loopCommands: command.loopCommands };
-                }
-                return command;
-            });
-        }
-
-        async executeLine(line) {
-            if (typeof line === 'object') {
-                const { loopCount, loopCommands } = line;
-                if (loopCount === -1) { // Forever loop
-                    while (true) {
-                        for (let cmd of loopCommands) {
-                            await this.executeLine(cmd);
-                        }
-                    }
-                } else {
-                    for (let i = 0; i < loopCount; i++) {
-                        for (let cmd of loopCommands) {
-                            await this.executeLine(cmd);
-                        }
-                    }
-                }
-                return;
-            }
-
+        executeLine(line) {
             const tokens = line.split(' ');
             const command = tokens[0];
 
-            if (command === 'VAR') {
-                const varName = tokens[1];
-                const value = this.getVar(tokens[3]);
-                this.setVar(varName, value);
-            } else if (command === 'RECT') {
+            if (command === 'CIRC') {
                 const name = tokens[1];
                 const x = this.getVar(tokens[2]);
                 const y = this.getVar(tokens[3]);
-                const width = this.getVar(tokens[4]);
-                const height = this.getVar(tokens[5]);
-                const color = `rgb(${this.getVar(tokens[6])}, ${this.getVar(tokens[7])}, ${this.getVar(tokens[8])})`;
-                this.createRect(name, x, y, width, height, color);
-            } else if (command === 'MOVE') {
+                const diameter = this.getVar(tokens[4]);
+                const color = `rgb(${this.getVar(tokens[5])}, ${this.getVar(tokens[6])}, ${this.getVar(tokens[7])})`;
+                this.createCirc(name, x, y, diameter, color);
+                this.physics[name] = { velocityX: 2, velocityY: 2 }; // Default velocity
+            } else if (command === 'BOUNCE') {
                 const name = tokens[1];
-                const dx = this.getVar(tokens[2]);
-                const dy = this.getVar(tokens[3]);
-                this.moveRect(name, dx, dy);
-            } else if (command === 'COLOR') {
-                const name = tokens[1];
-                const color = `rgb(${this.getVar(tokens[2])}, ${this.getVar(tokens[3])}, ${this.getVar(tokens[4])})`;
-                this.changeColor(name, color);
-            } else if (command === 'FUNCTION') {
-                const functionName = tokens[1];
-                const functionBody = tokens.slice(2).join(' ');
-                this.defineFunction(functionName, functionBody);
-            } else if (command === 'KEYPRESS') {
-                const key = tokens[1];
-                const action = tokens[2];
-                this.detectKeypress(key, action);
-            } else if (command === 'BGCOLOR') {
-                const r = this.getVar(tokens[1]);
-                const g = this.getVar(tokens[2]);
-                const b = this.getVar(tokens[3]);
-                this.canvas.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
-            } else if (command === 'WAIT') {
-                const seconds = this.getVar(tokens[1]);
-                await this.wait(seconds);
+                this.bounce(name);
             }
-        }
-
-        wait(seconds) {
-            return new Promise(resolve => setTimeout(resolve, seconds * 1000));
         }
     }
 
@@ -277,10 +171,11 @@
     document.getElementById('executeButton').addEventListener('click', () => {
         const code = document.getElementById('codeInput').value;
         interpreter.run(code);
-    });
 
-    document.addEventListener('keydown', (event) => {
-        interpreter.handleKeypress(event);
+        // Start the bouncing effect
+        const interval = setInterval(() => {
+            interpreter.bounce('ball'); // Assuming you name your ball 'ball'
+        }, 30); // Adjust interval as necessary
     });
 </script>
 

@@ -17,6 +17,7 @@ FUNCTION moveRight MOVE myRect 10 0  // defines/makes the moveright function
 moveRight  // calls the moveright function
 
 BGCOLOR: to change the background color you can do BGCOLOR R G B 
+Loop: to  make a loop you can do LOOP (num) (command) remove brackets there is no loop forever right now
 
 useful tips:
 190 190 is the center

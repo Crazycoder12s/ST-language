@@ -15,3 +15,8 @@ RECT myRect x y 50 50 255 0 0  // makes a red rectangle called myrect
 FUNCTION moveRight MOVE myRect 10 0  // defines/makes the moveright function
 
 moveRight  // calls the moveright function
+
+BGCOLOR: to change the background color you can do BGCOLOR R G B 
+
+useful tips:
+190 190 is the center

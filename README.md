@@ -1,4 +1,5 @@
 # ST-language
+CHECK THE CODE BIT
 Commands:
 Var: to use var type VAR then name then = num example: VAR f = 20
 Rectangles: currently, all you can make is a rectangle and to make it here is the setup: RECT [name] [x] [y] [width] [height] [R] [G] [B] obviously, remove brackets
@@ -26,6 +27,10 @@ LOOP FOREVER
 END
 
 Wait: to wait you do WAIT (number of secs) remove brackets
+Circ: To create a circle do CIRC (name) (x) (y) (diameter) (R) (G) (B) remove brackets and fill each bit in
+
+fun commands:
+Bounce: to bounce a ball! BOUNCE (name) replace name with circle name (only works with circles, sorry) and remove brackets
 
 useful tips:
 190 190 is the center

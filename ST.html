@@ -102,6 +102,7 @@
             this.shapes = {};
             this.keyEvents = {};
             this.canvas = document.getElementById('canvas');
+            this.isWaiting = false;
         }
 
         setVar(name, value) {
@@ -165,10 +166,10 @@
             }
         }
 
-        run(code) {
+        async run(code) {
             const commands = this.splitCommands(code);
             for (let line of commands) {
-                this.executeLine(line);
+                await this.executeLine(line);
             }
         }
 
@@ -205,16 +206,20 @@
             });
         }
 
-        executeLine(line) {
+        async executeLine(line) {
             if (typeof line === 'object') {
                 const { loopCount, loopCommands } = line;
                 if (loopCount === -1) { // Forever loop
                     while (true) {
-                        loopCommands.forEach(cmd => this.executeLine(cmd));
+                        for (let cmd of loopCommands) {
+                            await this.executeLine(cmd);
+                        }
                     }
                 } else {
                     for (let i = 0; i < loopCount; i++) {
-                        loopCommands.forEach(cmd => this.executeLine(cmd));
+                        for (let cmd of loopCommands) {
+                            await this.executeLine(cmd);
+                        }
                     }
                 }
                 return;
@@ -257,7 +262,14 @@
                 const g = this.getVar(tokens[2]);
                 const b = this.getVar(tokens[3]);
                 this.canvas.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
+            } else if (command === 'WAIT') {
+                const seconds = this.getVar(tokens[1]);
+                await this.wait(seconds);
             }
+        }
+
+        wait(seconds) {
+            return new Promise(resolve => setTimeout(resolve, seconds * 1000));
         }
     }
 

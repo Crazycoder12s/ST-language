@@ -60,13 +60,13 @@
         }
 
         textarea::-webkit-scrollbar-thumb {
-            background-color: #555;
+            background-color: #555; /* Scrollbar thumb color */
             border-radius: 5px;
             border: 2px solid #333;
         }
 
         textarea::-webkit-scrollbar-thumb:hover {
-            background-color: #888;
+            background-color: #888; /* Scrollbar thumb hover color */
         }
 
         button {
@@ -208,6 +208,11 @@
                 const key = tokens[1];
                 const action = tokens[2];
                 this.detectKeypress(key, action);
+            } else if (command === 'BGCOLOR') {
+                const r = this.getVar(tokens[1]);
+                const g = this.getVar(tokens[2]);
+                const b = this.getVar(tokens[3]);
+                this.canvas.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
             }
         }
     }
